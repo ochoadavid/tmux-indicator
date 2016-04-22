@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+## Autor: David Ochoa
+
+import sys
+import gtk
+import appindicator
+from sh import dtmux
+from sh import xterm
+#from sh import gnome_terminal
+
+PING_FREQUENCY = 10 # seconds
+
+class CheckTmux:
+    def __init__(self):
+        self.ind = appindicator.Indicator("new-tmux-indicator",
+                                           "indicator-messages",
+                                           appindicator.CATEGORY_APPLICATION_STATUS)
+        self.ind.set_status(appindicator.STATUS_ACTIVE)
+        self.ind.set_attention_icon("gtk-dialog-warning")
+        self.ind.set_icon("dialog-info")
+
+        self.menu_setup()
+        self.ind.set_menu(self.menu)
+
+    def menu_setup(self):
+        self.menu = gtk.Menu()
+
+        self.attach_item = gtk.MenuItem("Attach")
+        self.attach_item.connect("activate", self.attach)
+        self.attach_item.show()
+        self.menu.append(self.attach_item)
+
+        self.quit_item = gtk.MenuItem("Quit")
+        self.quit_item.connect("activate", self.quit)
+        self.quit_item.show()
+        self.menu.append(self.quit_item)
+
+    def main(self):
+        self.check_tmux()
+        gtk.timeout_add(PING_FREQUENCY * 1000, self.check_tmux)
+        gtk.main()
+
+    def quit(self, widget):
+        sys.exit(0)
+
+    def attach(self, widget):
+        xterm("-e", "tmux", "-2", "attach", _bg=True)
+        #gnome_terminal("-x", "tmux", "-2", "attach", _bg=True)
+
+    def check_tmux(self):
+        try:
+            if int(dtmux()) > 0:
+                self.ind.set_status(appindicator.STATUS_ATTENTION)
+            else:
+                self.ind.set_status(appindicator.STATUS_PASSIVE)
+        except ValueError:
+            self.ind.set_status(appindicator.STATUS_PASSIVE)
+        return True
+
+if __name__ == "__main__":
+    indicator = CheckTmux()
+    indicator.main()

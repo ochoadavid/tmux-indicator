@@ -1,0 +1,5 @@
+#!/bin/bash
+## Autor: David Ochoa
+
+tmux ls -F '#{?session_attached,0,1}' | awk '{s+=$1} END {print s}'
+
